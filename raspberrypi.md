@@ -18,17 +18,19 @@ Pins am [Raspberry Pi GPIO](https://www.raspberrypi.org/documentation/usage/gpio
 
 Diese Pins sind dem physikalischen Device "serial0" zugeordnet.
 Das physikalische device ist meist dem logischen Device ttyAMA0 zugeordnet, jedoch gibt es abhängig von der Rasperry Pi Version und der
-Raspbian / Rasperry Pi OS Version immer wieder andere Zuordnungen. Das korrekte logische Device kann so bestimmt werden:
+Raspbian / Rasperry Pi OS Version immer wieder andere Zuordnungen. Die aktuelle Konfiguration kann so bestimmt werden:
 * `ls -l /dev` ausführen und dann die Zuordnung von serial0 suchen.
 
-Dies ist im Normalfall entweder ttyAMA0 oder ttyS0. In den folgenden Beispielen wird aber immer **ttyAMA0** angeführt, falls notwendig bitte durch **ttyS0** ersetzen.
+Dies ist im Normalfall entweder ttyAMA0 oder ttyS0. Da der UART von ttyS0 Schwierigkeiten mit höheren Baudraten hat, wird dringen angeraten, <span style="color:OrangeRed">**unbedingt ttyAMA0 zu benutzen**</span>, wo diese Probleme nicht auftreten können.
+
+Sollte serial0 mit ttyS0 verbunden sein, was vor allem beim Raspberry Pi 3 und manchen Raspbian/Rasperry Pi OS Versionen auftritt, dann können ttyS0 und ttyAMA0 durch einen Eintrag in /boot/config.txt vertauscht werden:
+* `dtoverlay=pi3-miniuart-bt`
 
 Die ebusd device Konfiguration in /etc/default/ebusd lautet daher:
 
-`-d enh:/dev/ttyAMA0 --latency=50`
+* `-d ens:/dev/ttyAMA0 --latency=50`
 
-Falls keine anderen Gründe dagegen sprechen, wird dringend empfohlen, das Enhanced Protokoll ("enh:") zu verwenden, da nur dieses die Einhaltung des korrekten
-Timings am eBUS garantiert. Trotzdem soll "latency=50" spezifiziert werden, um bei den oft ungünstig implementierten UART Treibern im Raspberry Pi OS den ebusd nicht in ein Timeout laufen zu lassen.
+Falls keine anderen Gründe dagegen sprechen, wird dringend empfohlen, das Enhanced Protokoll ("ens:") zu verwenden, da nur dieses die Einhaltung des korrekten Timings am eBUS garantiert. Trotzdem soll "latency=50" spezifiziert werden, um bei den oft ungünstig implementierten UART Treibern im Raspberry Pi OS den ebusd nicht in ein Timeout laufen zu lassen.
 
 ### Konfiguration mit Raspberry Pi OS
 Standardmäßig werden die für den eBUS Adapter benötigten Pins vom Raspberry Pi OS für eine serielle Login Shell verwendet.
@@ -52,21 +54,7 @@ Deshalb sollte kontrolliert werden, ob in `/boot/config.txt` der Eintrag
 
 enthalten ist. Gegebenenfalls nachtragen und dann neu booten.
 
-Achtung! Sollte der ttyebus Treiber vorhanden sein, so ist er komplett zu deinstallieren. Dieser Treiber ist für den Enhanced Mode nicht geeeignet.
-
-Der Enhanced Mode des ebusd funktioniert sowohl auf dem ttyAMA0 (PL011) als auch auf dem ttyS0 (MiniUART) einwandfrei.
-
-Sollte dennoch ein Tausch der UARTs gewünscht sein, z.B. um Bluetooth weiterhin zu betreiben, kann in `/boot/config.txt` der Eintrag
-```ini
-[all]
-dtoverlay=disable-bt
-```
-
-hinzugefügt werden, welcher die beiden UARTs vertauscht. Soll das Bluetooth device hingegen komplett stillgelegt werden, kann dies mit
-```shell
-sudo systemctl disable hciuart
-```
-erfolgen.
+Achtung! Sollte der `ttyebus` Treiber vorhanden sein, so ist er komplett zu deinstallieren. Dieser Treiber ist für den Enhanced Mode nicht geeeignet.
 
 Um zu verifizieren, dass die Einstellungen richtig sind, kann man `dmesg|grep ttyAMA0` ausführen. Dies sollte eine Zeile wie
 folgt ausgeben:
